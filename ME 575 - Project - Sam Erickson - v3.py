@@ -363,6 +363,7 @@ else:
         for i in range(df_columns-1):
             for j in range(df_columns-1):
                 
+                print(f"\nRunning Genetic Algorithm for current Moving Average = {ma}, column = {i}, column = {j}")
                 x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
                 [rr,sr, br, si, bi, dca_i, b,a] = x_star
                 total_profit = f_star
@@ -374,14 +375,14 @@ else:
                 x_star_n = np.zeros([n_points,dims])
                 f_star_n = np.zeros(n_points)
                 if(np.shape(x)[0] >=np.size(f_star_n)):
-                    for i in range(n_points):
+                    for k in range(n_points):
                         res_n = opt(f_opt,
-                                    x[i,:],
-                                    jac=lambda j: FD.Complex_Step(f_opt,j),       # need this for some reason. It doesn't like just adding the function handle.
+                                    x[k,:],
+                                    jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
                                     bounds=the_bounds,
                                     tol=1e-12)
-                        x_star_n[i,:] = res_n.x
-                        f_star_n[i] = res_n.fun
+                        x_star_n[k,:] = res_n.x
+                        f_star_n[k] = res_n.fun
                 
                 total_profit = np.max(f_star_n)
             
@@ -392,4 +393,5 @@ else:
                 total_trades = dca_total_trades
 
                 # print("MP: ", f"{max_profit:.2f}", "P: ", f"{total_profit:.2f}", "(DCA:", f"{dca_total_profit:.2f}", ") T: ", total_trades, "(DCA: ", dca_total_trades, ") A: ", optimal_alpha, " B: ", optimal_beta, " BR: ", optimal_buy_ratio, " SR: ", optimal_sell_ratio, " RR: ", optimal_risk_ratio, " BI: ", optimal_buy_interval, " SI: ", optimal_sell_interval, " BC: ", optimal_buy_column, " SC: ", optimal_sell_column)
-                print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "\nT:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "\nMA:", ma, "\nA:", a, "\nB:", b, "\nBR:", br, "\nSR:", sr, "\nRR:", rr, "\nBI:", bi, "\nSI:", si, "\nBC:", i, "\nSC:", j)
+                # print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "T:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "MA:", ma, "\nA:", a, "B:", b, "\nBR:", br, "SR:", sr, "\nRR:", rr, "\nBI:", bi, "SI:", si, "\nBC:", i, "SC:", j)
+    print(f"Max % = {max_percentage}")
