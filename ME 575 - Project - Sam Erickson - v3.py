@@ -420,6 +420,8 @@ else:
             loop_iter = loop_iter + 1
     print(f"Max % = {max_percentage}")
 
+    # Now that the optimization is done, we will print the output for the optimization for each Moving Average type used.
+
     print("Best combination for each combination:")
     # Combine the arrays into a DataFrame
     # Ensure x_store is a 2D array
