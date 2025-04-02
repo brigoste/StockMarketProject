@@ -7,7 +7,11 @@ import matplotlib.pyplot as plt
 import GradientFree as gf
 from scipy.optimize import minimize as opt
 
+import warnings
+warnings.filterwarnings('ignore')
+
 global price_data
+
 
 # Critical Values
 alpha_array = np.linspace(0.01, 0.1, 10)
@@ -265,17 +269,19 @@ print(df.describe())
 # Check for missing values in the data
 print(df.isnull().sum())
 # Plot the closing price of the S&P 500 index over time
-plt.figure(figsize=(12, 6))
-plt.plot(df['Date'], df['Open'])
-plt.plot(df['Date'], df['Close'])
-plt.plot(df['Date'], df['High'])
-plt.plot(df['Date'], df['Low'])
-plt.legend(['Open', 'Close', 'High', 'Low'])
-plt.gca().invert_xaxis() # Flip the x-axis
-plt.title('S&P 500 Index Prices Over Time')
-plt.xlabel('Date')
-plt.ylabel('Price')
-plt.show()
+plot_initial_figure = False
+if(plot_initial_figure):
+    plt.figure(figsize=(12, 6))
+    plt.plot(df['Date'], df['Open'])
+    plt.plot(df['Date'], df['Close'])
+    plt.plot(df['Date'], df['High'])
+    plt.plot(df['Date'], df['Low'])
+    plt.legend(['Open', 'Close', 'High', 'Low'])
+    plt.gca().invert_xaxis() # Flip the x-axis
+    plt.title('S&P 500 Index Prices Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Price')
+    plt.show()
 
 
 max_profit = 0
