@@ -210,7 +210,9 @@ def dca_scenario(price_data, buy_col, sell_col, buy_rat, sell_rat, risk_rat, dca
 
 # Load the data
 # df = pd.read_csv("WINTER 2025 - ME 575\ME 575 - Project\HistoricalData_SP500_Daily_2012-Present.csv", header=0)
-df = pd.read_csv("SP500_Daily_2_5_2015_to_2_4_2025.csv", header=0)
+files = ["SP500_Daily_2_5_2015_to_2_4_2025.csv","Tesla_Daily_7_1_2023_to_3_20_2025.csv"]
+filename = files[1]
+df = pd.read_csv(filename, header=0)
 
 df_rows = df.shape[0]
 print(df_rows)
@@ -269,7 +271,7 @@ print(df.describe())
 # Check for missing values in the data
 print(df.isnull().sum())
 # Plot the closing price of the S&P 500 index over time
-plot_initial_figure = False
+plot_initial_figure = True
 if(plot_initial_figure):
     plt.figure(figsize=(12, 6))
     plt.plot(df['Date'], df['Open'])
