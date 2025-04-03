@@ -6,6 +6,7 @@ import FiniteDifference as FD
 import matplotlib.pyplot as plt
 import GradientFree as gf
 from scipy.optimize import minimize as opt
+import os
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -21,7 +22,7 @@ sell_ratio_array = np.linspace(0.0, 0.1, 11)
 risk_ratio_array = np.linspace(0.1, 1.0, 10) # percentage of acceptable risk relative to bonds or expected return
 buy_interval_array = np.linspace(1, 7, 7) # number of days between buying and selling evaluations
 sell_interval_array = np.linspace(1, 7, 7) # number of days between selling and buying evaluations
-moving_average_array = np.linspace(0, 200, 3) # number of days for the moving average calculation       21
+moving_average_array = np.linspace(0, 200, 21) # number of days for the moving average calculation       21
 weekly_investment = 100 # $ per week added to the investment portfolio
 dca_investment = 100 # $ per week added to the investment portfolio
 dca_interval_array = np.linspace(7, 7, 1) # number of days between dollar cost averaging evaluations
@@ -126,10 +127,11 @@ def liquidate_shares(price, money_holding, shares_holding, trading_revenue, tota
     return money_holding, trading_revenue, shares_holding, total_trades
 
 def optimal_scenario(x):
-    [alph,bet,buy_rat,sell_rat,risk_rat,buy_int,sell_int,week_inv] = x
+    [alph,bet,buy_rat,sell_rat,risk_rat,buy_int,sell_int] = x
     buy_col = 0
     sell_col = 1
     mov_avg_int = 21
+    week_inv = 100
     # reset variables for the next iteration
     buy_dir = 0 # 0 for bearish and 1 for bullish
     prev_buy_dir = 0 # 0 for bearish and 1 for bullish
@@ -210,8 +212,9 @@ def dca_scenario(price_data, buy_col, sell_col, buy_rat, sell_rat, risk_rat, dca
 
 # Load the data
 # df = pd.read_csv("WINTER 2025 - ME 575\ME 575 - Project\HistoricalData_SP500_Daily_2012-Present.csv", header=0)
-files = ["SP500_Daily_2_5_2015_to_2_4_2025.csv","Tesla_Daily_7_1_2023_to_3_20_2025.csv"]
-filename = files[1]
+folder = "StockMarketProject\\"
+files = ["SP500_Daily_2_5_2015_to_2_4_2025.csv","Tesla_Daily_7_1_2023_to_3_20_2025.csv","Amazon_Daily_3_28_2017_to_5_20_2025.csv"]
+filename = os.path.join(folder,files[2])
 df = pd.read_csv(filename, header=0)
 
 df_rows = df.shape[0]
@@ -354,100 +357,98 @@ if(run_loop_analysis):
                                                 # %: 2.25 (M%: 2.25 ) P: 37370.36 (MP: 37370.36 ) DCA: 36547.37 T: 375 (DCA: 362 ) DCA_INT: 7.0 MA: 0.0 A: 0.001 B: 0.1 BR: 1.0 SR: 0.0 RR: 0.1 BI: 1.0 SI: 1.0 BC: 3 SC: 2
 else:
     f_opt = optimal_scenario
-    risk_ratio_bounds = (0.1,1)
-    sell_ratio_bounds = (0,0.1)
-    buy_ratio_bounds = (0.01,0.1)
-    sell_interval_bounds = (1,7)
-    buy_interval_bounds = (1,7)
-    dca_interval_bounds = (1,7)
-    beta_bounds = (0.01,0.1)
+
+    # [alph,bet,buy_rat,sell_rat,risk_rat,buy_int,sell_int,week_inv] = x
+    # buy_col = 0
+    # sell_col = 1
+    # mov_avg_int = 21
+    dca_i = 1
+
     alpha_bounds = (0.01,1.0)
-    the_bounds = (risk_ratio_bounds, sell_ratio_bounds, buy_ratio_bounds, sell_interval_bounds, buy_interval_bounds, dca_interval_bounds, beta_bounds, alpha_bounds)
+    beta_bounds = (0.01,0.1)
+    buy_ratio_bounds = (0.01,0.1)
+    sell_ratio_bounds = (0,0.1)
+    risk_ratio_bounds = (0.1,1)
+    buy_interval_bounds = (1,7)
+    sell_interval_bounds = (1,7)
+    the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds)
     pop_size = 5
     generations = 5
-    dims = 8  # number of variables in x0
+    dims = 7  # number of variables in x0
     
     dca_store = np.array([])
     profit_store = np.array([])
     x_store = np.array([])
     n_trade_store = np.array([])
-    loop_iter =0 
+    loop_iter = 0 
 
     for ma in moving_average_array:
-        for i in range(df_columns-1):
-            for j in range(df_columns-1):
-                
-                print(f"\nRunning Genetic Algorithm for current Moving Average = {ma}, column = {i}, column = {j}")
-                
-                x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
-                [rr,sr, br, si, bi, dca_i, b,a] = x_star
-                total_profit = f_star
-                
-                print("Applying Gradient to best points...")
-                # take the best points (n_points) and use gradient approach to converge solution
-                n_points = (int)(np.ceil(pop_size/10))
+        # for i in range(df_columns-1):
+        #     for j in range(df_columns-1):
+        # df_columns = [close, open, high, low]
+        i = 0
+        j = 1
+        
+        print(f"\nRunning Genetic Algorithm for current Moving Average = {ma}")
+        
+        x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+        # [rr,sr, br, si, bi, dca_i, b,a] = x_star
+        [a,b,br,sr,rr,bi,si] = x_star
+        total_profit = f_star
+        
+        print("Applying Gradient to best points...")
+        # take the best points (n_points) and use gradient approach to converge solution
+        n_points = (int)(np.ceil(pop_size/10))
 
-                x_star_n = np.zeros([n_points,dims])
-                f_star_n = np.zeros(n_points)
-                if(np.shape(x)[0] >=np.size(f_star_n)):
-                    for k in range(n_points):
-                        res_n = opt(f_opt,
-                                    x[k,:],
-                                    jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
-                                    bounds=the_bounds,
-                                    tol=1e-12)
-                        x_star_n[k,:] = res_n.x
-                        f_star_n[k] = res_n.fun
-                
-                total_profit = np.max(f_star_n)
-            
-                dca_total_profit, dca_total_trades = dca_scenario(prices, i, j, br, sr, rr, dca_i, weekly_investment)
-                
-                opt_percentage = 100*((total_profit - dca_total_profit) / dca_total_profit)
-                max_percentage = opt_percentage
-                total_trades = dca_total_trades
-                if(loop_iter>1):
-                    dca_store = np.vstack([dca_store,dca_total_profit])
-                    profit_store = np.vstack([profit_store,total_profit])
-                    x_store = np.vstack([x_store,x_star_n[0,:]])
-                    n_trade_store = np.vstack([n_trade_store,total_trades])
-                else:
-                    dca_store = dca_total_profit
-                    profit_store = total_profit
-                    x_store = x_star_n[0,:]
-                    n_trade_store = total_trades
+        x_star_n = np.zeros([n_points,dims])
+        f_star_n = np.zeros(n_points)
+        if(np.shape(x)[0] >=np.size(f_star_n)):
+            for k in range(n_points):
+                res_n = opt(f_opt,
+                            x[k,:],
+                            jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
+                            bounds=the_bounds,
+                            tol=1e-12)
+                x_star_n[k,:] = res_n.x
+                f_star_n[k] = res_n.fun
+        
+        total_profit = np.max(f_star_n)
+    
+        dca_total_profit, dca_total_trades = dca_scenario(prices, i, j, br, sr, rr, dca_i, weekly_investment)
+        
+        opt_percentage = 100*((total_profit - dca_total_profit) / dca_total_profit)
+        max_percentage = opt_percentage
+        total_trades = dca_total_trades
+        if(loop_iter>1):
+            dca_store = np.vstack([dca_store,dca_total_profit])
+            profit_store = np.vstack([profit_store,total_profit])
+            x_store = np.vstack([x_store,x_star_n[0,:]])
+            n_trade_store = np.vstack([n_trade_store,total_trades])
+        else:
+            dca_store = dca_total_profit
+            profit_store = total_profit
+            x_store = x_star_n[0,:]
+            n_trade_store = total_trades
 
-                # print("MP: ", f"{max_profit:.2f}", "P: ", f"{total_profit:.2f}", "(DCA:", f"{dca_total_profit:.2f}", ") T: ", total_trades, "(DCA: ", dca_total_trades, ") A: ", optimal_alpha, " B: ", optimal_beta, " BR: ", optimal_buy_ratio, " SR: ", optimal_sell_ratio, " RR: ", optimal_risk_ratio, " BI: ", optimal_buy_interval, " SI: ", optimal_sell_interval, " BC: ", optimal_buy_column, " SC: ", optimal_sell_column)
-                # print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "T:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "MA:", ma, "\nA:", a, "B:", b, "\nBR:", br, "SR:", sr, "\nRR:", rr, "\nBI:", bi, "SI:", si, "\nBC:", i, "SC:", j)
-            loop_iter = loop_iter + 1
+        # print("MP: ", f"{max_profit:.2f}", "P: ", f"{total_profit:.2f}", "(DCA:", f"{dca_total_profit:.2f}", ") T: ", total_trades, "(DCA: ", dca_total_trades, ") A: ", optimal_alpha, " B: ", optimal_beta, " BR: ", optimal_buy_ratio, " SR: ", optimal_sell_ratio, " RR: ", optimal_risk_ratio, " BI: ", optimal_buy_interval, " SI: ", optimal_sell_interval, " BC: ", optimal_buy_column, " SC: ", optimal_sell_column)
+        # print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "T:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "MA:", ma, "\nA:", a, "B:", b, "\nBR:", br, "SR:", sr, "\nRR:", rr, "\nBI:", bi, "SI:", si, "\nBC:", i, "SC:", j)
+        loop_iter = loop_iter + 1
     print(f"Max % = {max_percentage}")
 
+    index_max = np.argmax(profit_store)
+    x_star = x_store[index_max,:]
+    f_star = profit_store[index_max]
+    dca_profit = dca_store[0]
+
     # Now that the optimization is done, we will print the output for the optimization for each Moving Average type used.
+    print("Optimized Values:")
+    print(f'alpha: {x_star[0]}')
+    print(f'beta: {x_star[1]}')
+    print(f'buy ratio: {x_star[2]}')
+    print(f'sell ratio: {x_star[3]}')
+    print(f'risk ratio: {x_star[4]}')
+    print(f'buy interval: {x_star[5]}')
+    print(f'sell interval: {x_star[6]}')
 
-    print("Best combination for each combination:")
-    # Combine the arrays into a DataFrame
-    # Ensure x_store is a 2D array
-    if x_store.ndim == 1:
-        x_store = np.expand_dims(x_store, axis=0)
-
-    data = {
-        "DCA Profit": dca_store.flatten(),
-        "Total Profit": profit_store.flatten(),
-        "Best Parameters": [list(x) for x in x_store],
-        "Number of Trades": n_trade_store.flatten()
-    }
-
-    # Create a DataFrame
-    df_results = pd.DataFrame(data)
-
-    # Format specific columns to 3 significant digits
-    df_results["DCA Profit"] = df_results["DCA Profit"].map('{:.3g}'.format)
-    df_results["Total Profit"] = df_results["Total Profit"].map('{:.3g}'.format)
-    df_results["Number of Trades"] = df_results["Number of Trades"].map('{:.3g}'.format)
-    # Round the "Best Parameters" values to 3 significant digits
-    df_results["Best Parameters"] = df_results["Best Parameters"].apply(
-        lambda params: [round(param, 3) for param in params]
-    )
-
-    # Print the DataFrame as a table
-    print(df_results.to_string(index=False))
+    print(f"Max profit: {f_star}")
+    print(f"DCA profit: {dca_profit}")
