@@ -165,7 +165,7 @@ def fit_func(x,f,pop_size):
     best_f = np.inf
     # determine the best value of f (the smallest)
     for i in range(pop_size):
-        profit = f([x[i,0],x[i,1],x[i,2],x[i,3],x[i,4],x[i,5],x[i,6],x[i,7]])
+        profit = f([x[i,0],x[i,1],x[i,2],x[i,3],x[i,4],x[i,5],x[i,6]])
         if(profit == 0):
             func[i] = np.inf
         else:
