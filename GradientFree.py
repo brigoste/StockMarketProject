@@ -45,7 +45,7 @@ def genetic_algorithm(f, fitness, bounds, pop_size, generations, dims, selection
     fit = fit[idx]
     # Loop through generations
     for i in range(generations):
-        # print(f"Generation {i+1}")
+        print(f"Generation {i+1}")
         # Select parents
         # roullette or tournament selection
         if(selection == "Roullette"):

@@ -11,7 +11,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-global price_data
+# global price_data
 
 
 # Critical Values
@@ -22,7 +22,7 @@ sell_ratio_array = np.linspace(0.0, 0.1, 11)
 risk_ratio_array = np.linspace(0.1, 1.0, 10) # percentage of acceptable risk relative to bonds or expected return
 buy_interval_array = np.linspace(1, 7, 7) # number of days between buying and selling evaluations
 sell_interval_array = np.linspace(1, 7, 7) # number of days between selling and buying evaluations
-moving_average_array = np.linspace(0, 10, 2) # number of days for the moving average calculation       21
+moving_average_array = np.linspace(0, 21, 1) # number of days for the moving average calculation       21
 weekly_investment = 100 # $ per week added to the investment portfolio
 dca_investment = 100 # $ per week added to the investment portfolio
 dca_interval_array = np.linspace(7, 7, 1) # number of days between dollar cost averaging evaluations
@@ -375,7 +375,7 @@ else:
     ma_bounds = (0,21)
     the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds,ma_bounds)
     pop_size = 100
-    generations = 10
+    generations = 20
     dims = np.shape(the_bounds)[0]  # number of variables in x0
     
     dca_store = np.array([])
