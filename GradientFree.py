@@ -85,6 +85,14 @@ def genetic_algorithm(f, fitness, bounds, pop_size, generations, dims, selection
         children_top = children[:-int(pop_size/5)]  # top 80% of the children
         new_gen = np.vstack([pop_top,children_top])
 
+        # apply boundary conditions
+        for j in range(pop_size):
+            for k in range(dims):
+                if(new_gen[j,k] < bounds[k][0]):
+                    new_gen[j,k] = bounds[k][0]
+                elif(new_gen[j,k] > bounds[k][1]):
+                    new_gen[j,k] = bounds[k][1]
+
         # Set new population as children
         pop = new_gen          #children become the new population
         # sort the population by fitness
@@ -165,15 +173,16 @@ def fit_func(x,f,pop_size):
     best_f = np.inf
     # determine the best value of f (the smallest)
     for i in range(pop_size):
-        profit = f([x[i,0],x[i,1],x[i,2],x[i,3],x[i,4],x[i,5],x[i,6]])
+        profit = f(x[i,:])
         if(profit == 0):
             func[i] = np.inf
         else:
-            func[i] = 1/profit
+            func[i] = 1/(1-profit)
 
         if(func[i] < best_f):
             best_f = func[i]
-
+    if(np.max(best_f) == np.inf and np.min(best_f) == np.inf):                  # this occurs if all the values come out to be 0.
+        best_f = 0
     # calculate the fitness of each individual as fit[i] = 1/(1+(f(x[i])-best_f)^2)
     # try new fitness: fit[i] =  -f(x[i])  
     for i in range(pop_size):
