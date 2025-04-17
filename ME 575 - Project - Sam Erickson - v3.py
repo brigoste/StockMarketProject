@@ -392,7 +392,8 @@ else:
     
     print(f"\nRunning Genetic Algorithm")
     
-    x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+    # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+    x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
     # [rr,sr, br, si, bi, dca_i, b,a] = x_star
     [a,b,br,sr,rr,bi,si,ma] = x_star
     total_profit = f_star
