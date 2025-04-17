@@ -214,8 +214,8 @@ def dca_scenario(price_data, buy_col, sell_col, buy_rat, sell_rat, risk_rat, dca
 # df = pd.read_csv("WINTER 2025 - ME 575\ME 575 - Project\HistoricalData_SP500_Daily_2012-Present.csv", header=0)
 folder = "StockMarketProject\\"
 files = ["SP500_Daily_2_5_2015_to_2_4_2025.csv","Tesla_Daily_7_1_2023_to_3_20_2025.csv","Amazon_Daily_3_28_2017_to_5_20_2025.csv"]
-filename = os.path.join(folder,files[0])
-# filename = files[1]
+# filename = os.path.join(folder,files[0])
+filename = files[1]
 df = pd.read_csv(filename, header=0)
 
 df_rows = df.shape[0]
@@ -275,7 +275,7 @@ print(df.describe())
 # Check for missing values in the data
 print(df.isnull().sum())
 # Plot the closing price of the S&P 500 index over time
-plot_initial_figure = True
+plot_initial_figure = False
 if(plot_initial_figure):
     plt.figure(figsize=(12, 6))
     plt.plot(df['Date'], df['Open'])
@@ -375,7 +375,7 @@ else:
     ma_bounds = (0,21)
     the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds,ma_bounds)
     pop_size = 100
-    generations = 20
+    generations = 10
     dims = np.shape(the_bounds)[0]  # number of variables in x0
     
     dca_store = np.array([])
@@ -390,13 +390,13 @@ else:
     i = 0
     j = 1
     
-    print(f"\nRunning Genetic Algorithm")
+    print(f"\nRunning Gradient Free Optimization:")
     
-    # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+    # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
     x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
     # [rr,sr, br, si, bi, dca_i, b,a] = x_star
-    [a,b,br,sr,rr,bi,si,ma] = x_star
-    total_profit = f_star
+    [a,b,br,sr,rr,bi,si,ma] = x_star[0,:]
+    total_profit = f_star[0]
     
     print("Applying Gradient to best points...")
     # take the best points (n_points) and use gradient approach to converge solution
@@ -407,7 +407,7 @@ else:
     if(np.shape(x)[0] >=np.size(f_star_n)):
         for k in range(n_points):
             res_n = opt(f_opt,
-                        x[k,:],
+                        x[k,:][0],
                         jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
                         bounds=the_bounds,
                         tol=1e-12)

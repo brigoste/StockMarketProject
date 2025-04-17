@@ -150,15 +150,6 @@ def Nelder_Mead(f, x0, bounds=((-2,2.5),(-1,3)), max_iter=50, tol=1e-6, plot_fla
     return xs[0], fs[0], xs, gen, x_store       # any of the points honestly. Should be close
 
 def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig=False):
-    # define values for plotting
-    x_range = np.linspace(bounds[0][0], bounds[0][1], 100)
-    y_range = np.linspace(bounds[1][0], bounds[1][1], 100)
-    X, Y = np.meshgrid(x_range, y_range)
-    Z = np.zeros_like(X)
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            Z[i, j] = f([X[i, j], Y[i, j]])
-
     # Generate initial population
     dims = len(bounds)
     l_bounds = np.zeros([dims])
@@ -171,18 +162,19 @@ def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig
     sampler = qmc.LatinHypercube(d=dims)
     sample = sampler.random(n=pop_size)
     pop = qmc.scale(sample, l_bounds, u_bounds)
-    x_best = np.zeros([len(pop),2])      # individual best
-    x_star = np.zeros([1,2])      # global best
+    x_best = np.zeros([len(pop),dims])      # individual best
+    x_star = np.zeros([1,dims])      # global best
 
     # Define weight limits
     beta_max = 2            # 0-2
     gamma_max = 2           # 0-2
-    dx = np.ones([pop_size,2])
+    dx = np.ones([pop_size,dims])
     dx_max = 1
     dx_max_red = 0.9        # between (0,1) that reduces the value of dx_max so the particles slow to a stop
     # 10% reduction seems to do the trick
 
     for gen in range(generations):
+        print('Iteration: ',gen+1)
         # define weights for the current generation (changes each generation, but applied uniformily to the population)
         alpha = np.random.uniform(0.8,1.2)
         beta = np.random.uniform(0,beta_max)
@@ -195,16 +187,16 @@ def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig
         idx = np.argsort(-f_vals)      # sort in descending order       
         pop = pop[idx]
         f_vals = f_vals[idx]        
-        x_best = np.zeros([pop_size,2])
+        x_best = np.zeros([pop_size,dims])
         f_star = f_vals[0]                 # best f value, set as infinity so we always have a value.
     
         # iterate thoough population and update the velocity and position of each particle
         for i in range(pop_size):
             new_pop = pop
             if(gen == 0):
-                x_min = pop[np.argmin(f(pop))]      # find the best and worst particle
-                x_max = pop[np.argmax(f(pop))]
-                dx[i,:] = 0.1*(np.random.uniform(x_min, x_max))  # start with a random speed, a scale between the bounds of xmin and xmax
+                x_min = pop[np.argmin(f_vals)]      # find the best and worst particle
+                x_max = pop[np.argmax(f_vals)]
+                dx[i,:] = 0.1*(np.random.uniform(x_min, x_max,dims))  # start with a random speed, a scale between the bounds of xmin and xmax
             else:
                 dx[i,:] = alpha*dx[i,:] + beta*(x_best[i,:] - pop[i,:]) + gamma*(x_star - pop[i,:])  # eq. 7.29, update particle velocity
                 if(np.linalg.norm(dx[i,:]) > dx_max):
@@ -225,9 +217,14 @@ def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig
         dx_max = dx_max * dx_max_red
 
     # sort at the end, so I can get the best point (only need to sort at the end)
-    f_vals = f(pop)
+    f_vals = []
+    for i in range(pop_size): 
+        if(np.size(f_vals) == 0):
+            f_vals = np.array(f(pop[i,:]))
+        else:
+            f_vals = np.vstack([f_vals,f(pop[i,:])])
     idx = np.argsort(-f_vals)      # sort in descending order       
-    pop = pop[idx]
+    pop = pop[idx,:]
     f_vals = f_vals[idx]
 
     return pop[0],f_vals[0], pop, generations
@@ -260,16 +257,16 @@ def genetic_algorithm(f,fitness,bounds, pop_size, generations, selection = "Roul
         # Select parents
         # roullette or tournament selection
         if(selection == "Roullette"):
-            parent_pairs = roullette_selection(fit,pop,pop_size)     # returns [n/2,4] array of parent pairs
+            parent_pairs = roullette_selection(fit,pop,pop_size,dims)     # returns [n/2,4] array of parent pairs
         else:
-            parent_pairs = tournament_selection(fit,pop,pop_size)
+            parent_pairs = tournament_selection(fit,pop,pop_size,dims)
 
         # Crossover
-        children = np.zeros([int(pop_size),2])    # 20 children, same as # of parents
+        children = np.zeros([int(pop_size),dims])    # 20 children, same as # of parents
         for j in range(int(pop_size/2)):
             # linear crossover
-            children[2*j] = 0.5*(parent_pairs[j,0:2] + parent_pairs[j,2:-1])        # child 1: average of 2 parents
-            children[(2*j)+1] = 2*(parent_pairs[j,0:2])-parent_pairs[j,2:-1]            # child 2: linear fit of 2 parents (weighted toward better parent)
+            children[2*j] = 0.5*(parent_pairs[j,0:2] + parent_pairs[j,dims:-1])        # child 1: average of 2 parents
+            children[(2*j)+1] = 2*(parent_pairs[j,0:2])-parent_pairs[j,dims:-1]            # child 2: linear fit of 2 parents (weighted toward better parent)
 
         # Mutation
         p = mutation_rate # mutation rate (0.005 to 0.05 generally)
@@ -315,8 +312,8 @@ def genetic_algorithm(f,fitness,bounds, pop_size, generations, selection = "Roul
 
     return pop[0],f(pop[0]), pop, generations #x_star, f_star, xs, gen
 
-def roullette_selection(fit,pop,pop_size): #Pair parents together roullete style (this is the way to date)
-    Parent_pairs = np.zeros([int(pop_size/2),4])
+def roullette_selection(fit,pop,pop_size,dims): #Pair parents together roullete style (this is the way to date)
+    Parent_pairs = np.zeros([int(pop_size/2),dims*2])
     # we recieve the fitness and their respective poputlation (may not need the population)
     dF = 1.1*max(fit) - 0.1*min(fit)  # scale the fitness values
     # Convert objective function values to a fitness value (F)
@@ -333,7 +330,7 @@ def roullette_selection(fit,pop,pop_size): #Pair parents together roullete style
     # Some parents can be selected more than once, but that is okay.
     for i in range(int(len(F)/2)):
         # Select parent 1
-        parent = np.zeros(4)
+        parent = np.zeros(dims*2)
         for k in range(2):
             r = np.random.rand()
             for j in range(int(len(S))):
@@ -359,11 +356,11 @@ def roullette_selection(fit,pop,pop_size): #Pair parents together roullete style
         Parent_pairs[i] = parent
     return Parent_pairs
 
-def tournament_selection(fit,pop,pop_size): #Pair parents together tournament style
-    Parent_pairs = np.zeros([int(pop_size/2),4])
+def tournament_selection(fit,pop,pop_size,dims): #Pair parents together tournament style
+    Parent_pairs = np.zeros([int(pop_size/2),dims*2])
     for i in range(int(pop_size/2)):
         # Select parent 1
-        parent = np.zeros(4)
+        parent = np.zeros(dims*2)
         for k in range(2):
             # Select 2 random parents
             idx = np.random.randint(0,pop_size,2)
@@ -586,55 +583,55 @@ def convergence_NM(F, xs, save_plot=False, save_directory = "Figures/"):
 
 
 # ------------------------------------- Main body of Package ------------------------------------
+def main():
+    fun_num = 1
+    method_list = [Nelder_Mead,genetic_algorithm,particle_swarm]
+    method = method_list[1]
+    plot_flag = False
+    save_plot = False
+    pop_size = 30   # size of population in each generations (Genetic/Particle Swarm)
+    n_gen = 30      # number of generations (Genetic/Particle Swarm) or max generations (Nelder-Mead)
+    mutation_rate = 0.005    # Genetic algorithm only. Should be on range (0.005, 0.05)
 
-fun_num = 1
-method_list = [Nelder_Mead,genetic_algorithm,particle_swarm]
-method = method_list[1]
-plot_flag = False
-save_plot = False
-pop_size = 30   # size of population in each generations (Genetic/Particle Swarm)
-n_gen = 30      # number of generations (Genetic/Particle Swarm) or max generations (Nelder-Mead)
-mutation_rate = 0.005    # Genetic algorithm only. Should be on range (0.005, 0.05)
+    if(fun_num == 1):
+        f = egg_carton
+        x0 = np.array([-0.5,-0.5])
+        # Define other intial points we can use to test Nelder-Mead
+        x0 = np.array([1,-2])
+        x0 = np.array([-3,-3])
+        x0 = np.array([1.1,3.5])
+        x0 = np.array([0,2.4])
+        the_bounds = ((-4,4),(-4,4))
+    else:
+        f = rosenbrock
+        x0 = np.array([0,0])
+        the_bounds = ((-4,4),(-4,4))
 
-if(fun_num == 1):
-    f = egg_carton
-    x0 = np.array([-0.5,-0.5])
-    # Define other intial points we can use to test Nelder-Mead
-    x0 = np.array([1,-2])
-    x0 = np.array([-3,-3])
-    x0 = np.array([1.1,3.5])
-    x0 = np.array([0,2.4])
-    the_bounds = ((-4,4),(-4,4))
-else:
-    f = rosenbrock
-    x0 = np.array([0,0])
-    the_bounds = ((-4,4),(-4,4))
-
-# plot the initial function
-if(plot_flag):
-    plot_function(f, the_bounds, save_plot)
-
-
-if(method == genetic_algorithm):
-    #f,fitness, bounds, pop_size, generations,plot_flag
-    # as a note: the population size should be divisible by 5 and 2. This is because we are pairing parents together and take the top 20% (1/5) of the parents and the top 80% (4/5) of the children.
-    selection_methods = ["Roullette","Tournament"]
-    selection = selection_methods[0]
-    x_star, f_star, xs, gen = method(f,fit_func,bounds=the_bounds, pop_size=pop_size, generations=n_gen, selection=selection, plot_flag=plot_flag, save_fig = save_plot, mutation_rate=mutation_rate)
-elif(method == Nelder_Mead):
-    x_star, f_star, xs, gen, x_store = method(f, x0, bounds=the_bounds, max_iter=n_gen, tol=1e-12, plot_flag=plot_flag, L=2,save_fig=save_plot) # You need a pretty low tolerance to get close to the optimizer
-    res_NM = opt(f,x0,method="Nelder-Mead",tol=1e-12)
+    # plot the initial function
     if(plot_flag):
-        convergence_NM(f,x_store,save_plot)
-elif(method == particle_swarm):
-    x_star, f_star, xs, gen = method(f, bounds=the_bounds, pop_size=pop_size, generations=n_gen, plot_flag=plot_flag,save_fig=save_plot)
+        plot_function(f, the_bounds, save_plot)
 
-print(f"x*_user = ", x_star, "f(x*) = ", f_star, "nfun = ", n_fun_local)
-if(plot_flag):  
-    plot_final_point(f,x_star, gen, the_bounds)
 
-if(method == Nelder_Mead):
-    print(f"x*_scipy = ", res_NM.x, "f(x*) = ", res_NM.fun, "nfun = ", res_NM.nfev)
+    if(method == genetic_algorithm):
+        #f,fitness, bounds, pop_size, generations,plot_flag
+        # as a note: the population size should be divisible by 5 and 2. This is because we are pairing parents together and take the top 20% (1/5) of the parents and the top 80% (4/5) of the children.
+        selection_methods = ["Roullette","Tournament"]
+        selection = selection_methods[0]
+        x_star, f_star, xs, gen = method(f,fit_func,bounds=the_bounds, pop_size=pop_size, generations=n_gen, selection=selection, plot_flag=plot_flag, save_fig = save_plot, mutation_rate=mutation_rate)
+    elif(method == Nelder_Mead):
+        x_star, f_star, xs, gen, x_store = method(f, x0, bounds=the_bounds, max_iter=n_gen, tol=1e-12, plot_flag=plot_flag, L=2,save_fig=save_plot) # You need a pretty low tolerance to get close to the optimizer
+        res_NM = opt(f,x0,method="Nelder-Mead",tol=1e-12)
+        if(plot_flag):
+            convergence_NM(f,x_store,save_plot)
+    elif(method == particle_swarm):
+        x_star, f_star, xs, gen = method(f, bounds=the_bounds, pop_size=pop_size, generations=n_gen, plot_flag=plot_flag,save_fig=save_plot)
 
-# x_star_opt = opt(f, x0, bounds=the_bounds)
-# print(f"x* = ", x_star_opt.x, "f(x*) = ", x_star_opt.fun)
+    print(f"x*_user = ", x_star, "f(x*) = ", f_star, "nfun = ", n_fun_local)
+    if(plot_flag):  
+        plot_final_point(f,x_star, gen, the_bounds)
+
+    if(method == Nelder_Mead):
+        print(f"x*_scipy = ", res_NM.x, "f(x*) = ", res_NM.fun, "nfun = ", res_NM.nfev)
+
+    # x_star_opt = opt(f, x0, bounds=the_bounds)
+    # print(f"x* = ", x_star_opt.x, "f(x*) = ", x_star_opt.fun)
