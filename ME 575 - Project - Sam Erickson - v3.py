@@ -214,9 +214,13 @@ def dca_scenario(price_data, buy_col, sell_col, buy_rat, sell_rat, risk_rat, dca
 # df = pd.read_csv("WINTER 2025 - ME 575\ME 575 - Project\HistoricalData_SP500_Daily_2012-Present.csv", header=0)
 folder = "StockMarketProject\\"
 files = ["SP500_Daily_2_5_2015_to_2_4_2025.csv","Tesla_Daily_7_1_2023_to_3_20_2025.csv","Amazon_Daily_3_28_2017_to_5_20_2025.csv"]
-# filename = os.path.join(folder,files[0])
-filename = files[1]
-df = pd.read_csv(filename, header=0)
+filename = os.path.join(folder,files[0])
+# filename = files[1]
+try:
+    df = pd.read_csv(filename,header=0)
+except:
+    df = pd.read_csv(os.path.join(folder,filename),header=0)
+# df = pd.read_csv(filename, header=0)
 
 df_rows = df.shape[0]
 print(df_rows)
@@ -374,8 +378,8 @@ else:
     sell_interval_bounds = (1,7)
     ma_bounds = (0,21)
     the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds,ma_bounds)
-    pop_size = 100
-    generations = 10
+    pop_size = 1000
+    generations = 50
     dims = np.shape(the_bounds)[0]  # number of variables in x0
     
     dca_store = np.array([])
@@ -391,6 +395,7 @@ else:
     j = 1
     
     print(f"\nRunning Gradient Free Optimization:")
+    print(f"population = {pop_size}\nGenerations = {generations}\n---------------------------------------------------------------")
     
     # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
     x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)

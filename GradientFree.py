@@ -174,7 +174,7 @@ def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig
     # 10% reduction seems to do the trick
 
     for gen in range(generations):
-        print('Iteration: ',gen+1)
+        print('Generation: ',gen+1)
         # define weights for the current generation (changes each generation, but applied uniformily to the population)
         alpha = np.random.uniform(0.8,1.2)
         beta = np.random.uniform(0,beta_max)
@@ -184,7 +184,7 @@ def particle_swarm(f,bounds, pop_size, generations,dims,plot_flag=False,save_fig
         f_vals = np.zeros(pop_size)
         for i in range(pop_size): 
             f_vals[i] = f(pop[i,:])
-        idx = np.argsort(-f_vals)      # sort in descending order       
+        idx = np.argsort(-f_vals)      # sort in descending order, since we want to minimize the function      
         pop = pop[idx]
         f_vals = f_vals[idx]        
         x_best = np.zeros([pop_size,dims])
