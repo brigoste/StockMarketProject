@@ -378,8 +378,8 @@ else:
     sell_interval_bounds = (1,7)
     ma_bounds = (0,21)
     the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds,ma_bounds)
-    pop_size = 1000
-    generations = 50
+    pop_size = 100
+    generations = 10
     dims = np.shape(the_bounds)[0]  # number of variables in x0
     
     dca_store = np.array([])
@@ -387,80 +387,106 @@ else:
     x_store = np.array([])
     n_trade_store = np.array([])
     loop_iter = 0 
+    max_iterations = 10
 
     # for i in range(df_columns-1):
     #     for j in range(df_columns-1):
     # df_columns = [close, open, high, low]
     i = 0
     j = 1
+    global_xstars = np.zeros([max_iterations, dims])
+    global_fstars = np.zeros([max_iterations, 1])
+    global_dca_fstars = np.zeros([max_iterations, 1])
     
-    print(f"\nRunning Gradient Free Optimization:")
-    print(f"population = {pop_size}\nGenerations = {generations}\n---------------------------------------------------------------")
-    
-    # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
-    x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
-    # [rr,sr, br, si, bi, dca_i, b,a] = x_star
-    [a,b,br,sr,rr,bi,si,ma] = x_star[0,:]
-    total_profit = f_star[0]
-    
-    print("Applying Gradient to best points...")
-    # take the best points (n_points) and use gradient approach to converge solution
-    n_points = (int)(np.ceil(pop_size/10))
+    while loop_iter < max_iterations:   # this simulations warm starts (i.e. max_iteration warm starts)
+        print(f"\nRunning Gradient Free Optimization:")
+        print(f"population = {pop_size}\nGenerations = {generations}\nWarm Star = {loop_iter}------------------------------------------------------------")
+        
+        # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
+        x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+        # [rr,sr, br, si, bi, dca_i, b,a] = x_star
+        [a,b,br,sr,rr,bi,si,ma] = x_star[0,:]
+        total_profit = f_star[0]
+        
+        print("Applying Gradient to best points...")
+        # take the best points (n_points) and use gradient approach to converge solution
+        n_points = (int)(np.ceil(pop_size/10))
 
-    x_star_n = np.zeros([n_points,dims])
-    f_star_n = np.zeros(n_points)
-    if(np.shape(x)[0] >=np.size(f_star_n)):
-        for k in range(n_points):
-            res_n = opt(f_opt,
-                        x[k,:][0],
-                        jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
-                        bounds=the_bounds,
-                        tol=1e-12)
-            x_star_n[k,:] = res_n.x
-            f_star_n[k] = res_n.fun
-    
-    total_profit = np.max(f_star_n)
+        x_star_n = np.zeros([n_points,dims])
+        f_star_n = np.zeros(n_points)
+        if(np.shape(x)[0] >=np.size(f_star_n)):
+            for k in range(n_points):
+                res_n = opt(f_opt,
+                            x[k,:][0],
+                            jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
+                            bounds=the_bounds,
+                            tol=1e-12)
+                x_star_n[k,:] = res_n.x
+                f_star_n[k] = res_n.fun
+        
+        total_profit = np.max(f_star_n)
 
-    dca_total_profit, dca_total_trades = dca_scenario(prices, i, j, br, sr, rr, dca_i, weekly_investment)
-    
-    opt_percentage = 100*((total_profit - dca_total_profit) / dca_total_profit)
-    max_percentage = opt_percentage
-    total_trades = dca_total_trades
-    if(loop_iter>1):
-        dca_store = np.vstack([dca_store,dca_total_profit])
-        profit_store = np.vstack([profit_store,total_profit])
-        x_store = np.vstack([x_store,x_star_n[0,:]])
-        n_trade_store = np.vstack([n_trade_store,total_trades])
-    else:
-        dca_store = dca_total_profit
-        profit_store = total_profit
-        x_store = x_star_n[0,:]
-        n_trade_store = total_trades
+        dca_total_profit, dca_total_trades = dca_scenario(prices, i, j, br, sr, rr, dca_i, weekly_investment)
+        
+        opt_percentage = 100*((total_profit - dca_total_profit) / dca_total_profit)
+        max_percentage = opt_percentage
+        total_trades = dca_total_trades
+        if(loop_iter>1):
+            dca_store = np.vstack([dca_store,dca_total_profit])
+            profit_store = np.vstack([profit_store,total_profit])
+            x_store = np.vstack([x_store,x_star_n[0,:]])
+            n_trade_store = np.vstack([n_trade_store,total_trades])
+        else:
+            dca_store = dca_total_profit
+            profit_store = total_profit
+            x_store = x_star_n[0,:]
+            n_trade_store = total_trades
 
-    # print("MP: ", f"{max_profit:.2f}", "P: ", f"{total_profit:.2f}", "(DCA:", f"{dca_total_profit:.2f}", ") T: ", total_trades, "(DCA: ", dca_total_trades, ") A: ", optimal_alpha, " B: ", optimal_beta, " BR: ", optimal_buy_ratio, " SR: ", optimal_sell_ratio, " RR: ", optimal_risk_ratio, " BI: ", optimal_buy_interval, " SI: ", optimal_sell_interval, " BC: ", optimal_buy_column, " SC: ", optimal_sell_column)
-    # print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "T:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "MA:", ma, "\nA:", a, "B:", b, "\nBR:", br, "SR:", sr, "\nRR:", rr, "\nBI:", bi, "SI:", si, "\nBC:", i, "SC:", j)
-    loop_iter = loop_iter + 1
+        # print("MP: ", f"{max_profit:.2f}", "P: ", f"{total_profit:.2f}", "(DCA:", f"{dca_total_profit:.2f}", ") T: ", total_trades, "(DCA: ", dca_total_trades, ") A: ", optimal_alpha, " B: ", optimal_beta, " BR: ", optimal_buy_ratio, " SR: ", optimal_sell_ratio, " RR: ", optimal_risk_ratio, " BI: ", optimal_buy_interval, " SI: ", optimal_sell_interval, " BC: ", optimal_buy_column, " SC: ", optimal_sell_column)
+        # print("%:", f"{opt_percentage:.2f}", "(M%:", f"{max_percentage:.2f}", ")\n P:", f"{total_profit:.2f}", "(MP:", f"{max_profit:.2f}", ")\n DCA:", f"{dca_total_profit:.2f}", "T:", total_trades, "(DCA:", dca_total_trades, ")\n DCA_INT:", dca_i, "MA:", ma, "\nA:", a, "B:", b, "\nBR:", br, "SR:", sr, "\nRR:", rr, "\nBI:", bi, "SI:", si, "\nBC:", i, "SC:", j)
+        loop_iter = loop_iter + 1
 
-    index_max = np.argmax(profit_store)
-    if(np.size(profit_store)==1):
-        x_star = x_store
-        f_star = profit_store
-        dca_profit = dca_store
-    else:
-        x_star = x_store[index_max,:]
-        f_star = profit_store[index_max]
-        dca_profit = dca_store[0]
+        index_max = np.argmax(profit_store)
+        if(np.size(profit_store)==1):
+            x_star = x_store
+            f_star = profit_store
+            dca_profit = dca_store
+        else:
+            x_star = x_store[index_max,:]
+            f_star = profit_store[index_max]
+            dca_profit = dca_store[0]
 
-    # Now that the optimization is done, we will print the output for the optimization for each Moving Average type used.
+        global_xstars[loop_iter-1,:] = x_star
+        global_fstars[loop_iter-1] = f_star
+        global_dca_fstars[loop_iter-1] = dca_profit
+        # Now that the optimization is done, we will print the output for the optimization for each Moving Average type used.
+        print("Optimized Values:")
+        print(f'alpha: {x_star[0]}')
+        print(f'beta: {x_star[1]}')
+        print(f'buy ratio: {x_star[2]}')
+        print(f'sell ratio: {x_star[3]}')
+        print(f'risk ratio: {x_star[4]}')
+        print(f'buy interval: {x_star[5]}')
+        print(f'sell interval: {x_star[6]}')
+        print(f'moving average interval: {x_star[7]}')
+
+        print(f"Max profit: {np.round(f_star,2)}")
+        print(f"DCA profit: {np.round(dca_profit,2)}")
+
+    # order the global data
+    index_max = np.argmax(global_fstars)
+    global_xstars = global_xstars[index_max,:]
+    global_fstars = global_fstars[index_max]
+    global_dca_fstars = global_dca_fstars[index_max]
     print("Optimized Values:")
-    print(f'alpha: {x_star[0]}')
-    print(f'beta: {x_star[1]}')
-    print(f'buy ratio: {x_star[2]}')
-    print(f'sell ratio: {x_star[3]}')
-    print(f'risk ratio: {x_star[4]}')
-    print(f'buy interval: {x_star[5]}')
-    print(f'sell interval: {x_star[6]}')
-    print(f'moving average interval: {x_star[7]}')
-
-    print(f"Max profit: {np.round(f_star,2)}")
-    print(f"DCA profit: {np.round(dca_profit,2)}")
+    print(f'alpha: {global_xstars[0]}')
+    print(f'beta: {global_xstars[1]}')
+    print(f'buy ratio: {global_xstars[2]}')
+    print(f'sell ratio: {global_xstars[3]}')
+    print(f'risk ratio: {global_xstars[4]}')
+    print(f'buy interval: {global_xstars[5]}')
+    print(f'sell interval: {global_xstars[6]}')
+    print(f'moving average interval: {global_xstars[7]}')
+    print(f"Max profit: {np.round(global_fstars,2)}")
+    print(f"DCA profit: {np.round(global_dca_fstars,2)}")
+    print(f"Max profit percentage: {np.round(100*((global_fstars - global_dca_fstars) / global_dca_fstars),2)}")
