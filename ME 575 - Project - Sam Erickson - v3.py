@@ -222,6 +222,10 @@ except:
     df = pd.read_csv(os.path.join(folder,filename),header=0)
 # df = pd.read_csv(filename, header=0)
 
+# cut data to be only x number of days (1-5 years)
+n_years = 5
+df = df[0:n_years*252,:]
+
 df_rows = df.shape[0]
 print(df_rows)
 df_columns = df.shape[1]
@@ -378,8 +382,8 @@ else:
     sell_interval_bounds = (1,7)
     ma_bounds = (0,21)
     the_bounds = (alpha_bounds,beta_bounds,buy_ratio_bounds,sell_ratio_bounds,risk_ratio_bounds,buy_interval_bounds,sell_interval_bounds,ma_bounds)
-    pop_size = 100
-    generations = 10
+    pop_size = 150
+    generations = 15
     dims = np.shape(the_bounds)[0]  # number of variables in x0
     
     dca_store = np.array([])
@@ -387,7 +391,7 @@ else:
     x_store = np.array([])
     n_trade_store = np.array([])
     loop_iter = 0 
-    max_iterations = 10
+    max_iterations = 10         # number of warm starts
 
     # for i in range(df_columns-1):
     #     for j in range(df_columns-1):
@@ -400,10 +404,10 @@ else:
     
     while loop_iter < max_iterations:   # this simulations warm starts (i.e. max_iteration warm starts)
         print(f"\nRunning Gradient Free Optimization:")
-        print(f"population = {pop_size}\nGenerations = {generations}\nWarm Star = {loop_iter}------------------------------------------------------------")
+        print(f"population = {pop_size}\nGenerations = {generations}\nWarm Start = {loop_iter}\n------------------------------------------------------------")
         
-        # x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
-        x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
+        x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
+        # x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
         # [rr,sr, br, si, bi, dca_i, b,a] = x_star
         [a,b,br,sr,rr,bi,si,ma] = x_star[0,:]
         total_profit = f_star[0]
@@ -478,6 +482,7 @@ else:
     global_xstars = global_xstars[index_max,:]
     global_fstars = global_fstars[index_max]
     global_dca_fstars = global_dca_fstars[index_max]
+    print("------------------------------------------------------------\n")
     print("Optimized Values:")
     print(f'alpha: {global_xstars[0]}')
     print(f'beta: {global_xstars[1]}')

@@ -265,8 +265,8 @@ def genetic_algorithm(f,fitness,bounds, pop_size, generations, selection = "Roul
         children = np.zeros([int(pop_size),dims])    # 20 children, same as # of parents
         for j in range(int(pop_size/2)):
             # linear crossover
-            children[2*j] = 0.5*(parent_pairs[j,0:2] + parent_pairs[j,dims:-1])        # child 1: average of 2 parents
-            children[(2*j)+1] = 2*(parent_pairs[j,0:2])-parent_pairs[j,dims:-1]            # child 2: linear fit of 2 parents (weighted toward better parent)
+            children[2*j] = 0.5*(parent_pairs[j,0:dims] + parent_pairs[j,dims-1:-1])        # child 1: average of 2 parents
+            children[(2*j)+1] = 2*(parent_pairs[j,0:dims])-parent_pairs[j,dims-1:-1]            # child 2: linear fit of 2 parents (weighted toward better parent)
 
         # Mutation
         p = mutation_rate # mutation rate (0.005 to 0.05 generally)
