@@ -335,11 +335,11 @@ def roullette_selection(fit,pop,pop_size,dims): #Pair parents together roullete 
             r = np.random.rand()
             for j in range(int(len(S))):
                 if(r > S[-1]):          # if our random number is greater than the last probability, select the last parent
-                    parent[2*k:(2*k)+2] = pop[-1]
+                    parent[dims*k:(dims*k)+dims] = pop[-1]
                     # parent[2*k:(2*k)+2] = (np.size(pop)/2)-1        #index istead of values
                     break
                 elif(r < S[j]):
-                    parent[2*k:(2*k)+2] = pop[j]        #I could also just return the index, not the population value.
+                    parent[dims*k:(dims*k)+dims] = pop[j]        #I could also just return the index, not the population value.
                     if(j > 0 and j < len(F)-1):
                         pop = np.vstack((pop[0:j],pop[j+1:]))      # remove the parent from the population so it doens't get selected again?
                         S = np.hstack((S[0:j],S[j+1:]))            # remove the probablity from the stack

@@ -224,7 +224,7 @@ except:
 
 # cut data to be only x number of days (1-5 years)
 n_years = 5
-df = df[0:n_years*252,:]
+df = df.iloc[1:n_years*252,:]
 
 df_rows = df.shape[0]
 print(df_rows)
@@ -233,18 +233,24 @@ print(df_columns)
 
 prices = np.zeros((df_rows, df_columns-1))
 
-df_Date = np.linspace(0, df_rows, df_rows) # Days since the start of the data ()
+# df_Date = np.linspace(0, df_rows, df_rows) # Days since the start of the data ()
 # df_Date = df['Date']
 # df_Date.reverse()
 # print(df_Date)
-df_Close = list(reversed(df['Close']))
-# print(df_Close)
-df_Open = list(reversed(df['Open']))
-# print(df_Open)
-df_High = list(reversed(df['High']))
-# print(df_High)
-df_Low = list(reversed(df['Low']))
+# df_Close = list(reversed(df['Close']))
+# # print(df_Close)
+# df_Open = list(reversed(df['Open']))
+# # print(df_Open)
+# df_High = list(reversed(df['High']))
+# # print(df_High)
+# df_Low = list(reversed(df['Low']))
 # print(df_Low)
+
+df_Close = df['Close'].iloc[::-1].to_numpy()
+df_Open = df['Open'].iloc[::-1].to_numpy()
+df_High = df['High'].iloc[::-1].to_numpy()
+df_Low = df['Low'].iloc[::-1].to_numpy()
+
 
 prices[:,0] = df_Open
 prices[:,1] = df_Close
@@ -409,8 +415,8 @@ else:
         x_star, f_star, x, n_gen = gf.genetic_algorithm(f_opt,gf.fit_func, bounds=the_bounds, pop_size=pop_size, generations=generations)
         # x_star, f_star, x, n_gen = gf.particle_swarm(f_opt,bounds=the_bounds, pop_size=pop_size, generations=generations, dims=dims)
         # [rr,sr, br, si, bi, dca_i, b,a] = x_star
-        [a,b,br,sr,rr,bi,si,ma] = x_star[0,:]
-        total_profit = f_star[0]
+        [a,b,br,sr,rr,bi,si,ma] = x_star
+        total_profit = f_star
         
         print("Applying Gradient to best points...")
         # take the best points (n_points) and use gradient approach to converge solution
@@ -421,7 +427,7 @@ else:
         if(np.shape(x)[0] >=np.size(f_star_n)):
             for k in range(n_points):
                 res_n = opt(f_opt,
-                            x[k,:][0],
+                            x[k,:],
                             jac=lambda l: FD.Complex_Step(f_opt,l),       # need this for some reason. It doesn't like just adding the function handle.
                             bounds=the_bounds,
                             tol=1e-12)
